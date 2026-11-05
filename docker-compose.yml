@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-verity}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verity}
+      POSTGRES_DB: ${POSTGRES_DB:-verity}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-verity} -d ${POSTGRES_DB:-verity}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  chroma:
+    image: chromadb/chroma:latest
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/data
+    environment:
+      IS_PERSISTENT: "TRUE"
+      PERSIST_DIRECTORY: /data
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-verity}:${POSTGRES_PASSWORD:-verity}@postgres:5432/${POSTGRES_DB:-verity}
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chroma
+      CHROMA_PORT: "8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chroma:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  chroma_data:
