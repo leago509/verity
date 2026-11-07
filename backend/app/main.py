@@ -1,15 +1,16 @@
 import os
 
 import redis
-from fastapi import FastAPI
-from sqlalchemy import create_engine, text
+from fastapi import Depends, FastAPI
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+from .db import engine, get_db
+from .models import Meeting
+
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 CHROMA_HOST = os.environ.get("CHROMA_HOST", "localhost")
 CHROMA_PORT = int(os.environ.get("CHROMA_PORT", "8000"))
-
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 app = FastAPI(title="Verity API")
 
@@ -46,3 +47,13 @@ def health():
         status["chroma"] = f"error: {exc}"
 
     return status
+
+
+@app.get("/meetings")
+def list_meetings(db: Session = Depends(get_db)):
+    """Temporary: lists all meetings. Will be scoped to the logged-in user once auth exists."""
+    rows = db.scalars(select(Meeting).order_by(Meeting.created_at.desc())).all()
+    return [
+        {"id": m.id, "title": m.title, "status": m.status, "created_at": m.created_at}
+        for m in rows
+    ]
