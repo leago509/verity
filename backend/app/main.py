@@ -1,15 +1,13 @@
 import os
 
 import redis
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, text
-from sqlalchemy.orm import Session
+from sqlalchemy import text
 
-from .auth import get_current_user
 from .auth import router as auth_router
-from .db import engine, get_db
-from .models import Meeting, User
+from .db import engine
+from .meetings import router as meetings_router
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 CHROMA_HOST = os.environ.get("CHROMA_HOST", "localhost")
@@ -35,6 +33,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(meetings_router)
 
 
 @app.get("/")
@@ -69,19 +68,3 @@ def health():
         status["chroma"] = f"error: {exc}"
 
     return status
-
-
-@app.get("/meetings")
-def list_meetings(
-    user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
-    """Lists the logged-in user's meetings, newest first."""
-    rows = db.scalars(
-        select(Meeting)
-        .where(Meeting.owner_id == user.id)
-        .order_by(Meeting.created_at.desc())
-    ).all()
-    return [
-        {"id": m.id, "title": m.title, "status": m.status, "created_at": m.created_at}
-        for m in rows
-    ]
