@@ -8,3 +8,5 @@ chromadb-client>=0.5
 pydantic[email]>=2.0
 bcrypt>=4.1
 PyJWT>=2.8
+python-multipart>=0.0.9
+celery[redis]>=5.4

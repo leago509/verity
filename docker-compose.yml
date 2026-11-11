@@ -46,10 +46,13 @@ services:
       CHROMA_PORT: "8000"
       SECRET_KEY: ${SECRET_KEY:-dev-only-change-me}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      UPLOAD_DIR: /data/uploads
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-500}
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - uploads_data:/data/uploads
     # Apply any new migrations, then start the API with auto-reload.
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
@@ -60,7 +63,27 @@ services:
       chroma:
         condition: service_started
 
+  worker:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-verity}:${POSTGRES_PASSWORD:-verity}@postgres:5432/${POSTGRES_DB:-verity}
+      REDIS_URL: redis://redis:6379/0
+      CHROMA_HOST: chroma
+      CHROMA_PORT: "8000"
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - ./backend:/app
+      - uploads_data:/data/uploads
+    # Runs the background jobs (later: transcription, summaries, hallucination check).
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
   chroma_data:
+  uploads_data:
