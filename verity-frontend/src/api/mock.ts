@@ -88,6 +88,8 @@ runPipeline('m2', 'TRANSCRIBING');
 
 let nextId = 4;
 
+const mockGoogle = { connected: false };
+
 export const mockApi: Api = {
   async register(name, email) {
     await delay();
@@ -130,6 +132,28 @@ export const mockApi: Api = {
     const m = store.get(id);
     const text = (m?.transcript ?? []).map((s) => `[${s.start}s] ${s.speaker}: ${s.text}`).join('\n');
     saveBlob(new Blob([text], { type: 'text/plain' }), `transcript-${id}.txt`);
+  },
+  async getGoogleMeetStatus() {
+    await delay();
+    return {
+      configured: true,
+      connected: mockGoogle.connected,
+      google_email: mockGoogle.connected ? 'demo@example.com' : null,
+      status: mockGoogle.connected ? 'active' : null,
+      last_error: null,
+      push_enabled: false,
+    };
+  },
+  async getGoogleMeetConnectUrl() {
+    mockGoogle.connected = true; // no real Google in mock mode: pretend the consent succeeded
+    return window.location.origin + '/?google=connected';
+  },
+  async syncGoogleMeet() {
+    await delay();
+  },
+  async disconnectGoogleMeet() {
+    await delay();
+    mockGoogle.connected = false;
   },
   async downloadPdf() {
     throw new ApiError(501, 'PDF export needs the real backend.');

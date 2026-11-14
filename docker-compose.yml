@@ -48,6 +48,15 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       UPLOAD_DIR: /data/uploads
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-500}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/integrations/google-meet/callback}
+      GOOGLE_PUBSUB_TOPIC: ${GOOGLE_PUBSUB_TOPIC:-}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PUBSUB_VERIFY: ${PUBSUB_VERIFY:-true}
+      PUBSUB_AUDIENCE: ${PUBSUB_AUDIENCE:-}
+      PUBSUB_PUSH_SERVICE_ACCOUNT: ${PUBSUB_PUSH_SERVICE_ACCOUNT:-}
     ports:
       - "8000:8000"
     volumes:
@@ -71,6 +80,12 @@ services:
       CHROMA_HOST: chroma
       CHROMA_PORT: "8000"
       UPLOAD_DIR: /data/uploads
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/integrations/google-meet/callback}
+      GOOGLE_PUBSUB_TOPIC: ${GOOGLE_PUBSUB_TOPIC:-}
+      TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-}
+      SECRET_KEY: ${SECRET_KEY:-dev-only-change-me}
     volumes:
       - ./backend:/app
       - uploads_data:/data/uploads
@@ -79,6 +94,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Schedules the Google Meet polling and subscription-renewal jobs.
+  beat:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-verity}:${POSTGRES_PASSWORD:-verity}@postgres:5432/${POSTGRES_DB:-verity}
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    command: celery -A app.celery_app beat --loglevel=info
+    depends_on:
       redis:
         condition: service_healthy
 

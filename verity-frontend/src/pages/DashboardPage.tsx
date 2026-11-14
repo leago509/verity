@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import GoogleMeetCard from '../components/GoogleMeetCard';
 import { IN_PROGRESS, StatusBadge } from '../components/StatusBadge';
 import { formatDate } from '../lib/format';
 import type { MeetingSummary } from '../types';
@@ -35,6 +36,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold">Your meetings</h1>
         <Link to="/upload" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white">Upload recording</Link>
       </div>
+      <GoogleMeetCard />
       {error && <p role="alert" className="mb-3 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       {meetings === null && !error && <p className="text-slate-500">Loading…</p>}
       {meetings && meetings.length === 0 && (
@@ -58,7 +60,7 @@ export default function DashboardPage() {
                     )}
                   </td>
                   <td className="p-3 text-slate-600">{formatDate(m.meeting_date)}</td>
-                  <td className="p-3 text-slate-600">{m.source === 'UPLOAD' ? 'Manual upload' : 'Connected (Zoom)'}</td>
+                  <td className="p-3 text-slate-600">{m.source === 'UPLOAD' ? 'Manual upload' : 'Google Meet'}</td>
                   <td className="p-3"><StatusBadge status={m.status} /></td>
                 </tr>
               ))}

@@ -28,7 +28,7 @@ export interface MeetingSummary {
   meeting_id: string;
   title: string;
   meeting_date: string; // ISO string
-  source: 'UPLOAD' | 'CONNECTED';
+  source: 'UPLOAD' | 'GOOGLE_MEET';
   status: MeetingStatus;
   failure_reason?: string | null;
   results_ready_notice?: boolean;
@@ -97,4 +97,13 @@ export interface UploadMeta {
 export interface UploadResult {
   job_id: string;
   meeting_id: string;
+}
+
+export interface GoogleMeetStatus {
+  configured: boolean; // server has Google credentials
+  connected: boolean;
+  google_email: string | null;
+  status: string | null; // "active" | "revoked"
+  last_error: string | null;
+  push_enabled: boolean;
 }

@@ -2,7 +2,7 @@ import type { Api } from './types';
 import { ApiError } from './types';
 import { notifyUnauthorized, session } from './session';
 import { saveBlob } from '../lib/format';
-import type { AuthResponse, MeetingDetail, MeetingSummary, ProgressEvent, UploadResult } from '../types';
+import type { AuthResponse, GoogleMeetStatus, MeetingDetail, MeetingSummary, ProgressEvent, UploadResult } from '../types';
 
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const WS_BASE = import.meta.env.VITE_WS_URL ?? 'ws://localhost:8000';
@@ -91,6 +91,16 @@ export const realApi: Api = {
 
   downloadTranscript: (id) => download(`/meetings/${id}/transcript/download`, `transcript-${id}.txt`),
   downloadPdf: (id) => download(`/meetings/${id}/pdf`, `verity-report-${id}.pdf`),
+
+  getGoogleMeetStatus: () => json<GoogleMeetStatus>('/integrations/google-meet/status'),
+  getGoogleMeetConnectUrl: async () =>
+    (await json<{ url: string }>('/integrations/google-meet/connect')).url,
+  syncGoogleMeet: async () => {
+    await request('/integrations/google-meet/sync', { method: 'POST' });
+  },
+  disconnectGoogleMeet: async () => {
+    await request('/integrations/google-meet', { method: 'DELETE' });
+  },
 
   // WSS /ws/meetings/{id}. Auto-reconnects; the server must authenticate before subscribing.
   subscribeProgress: (id, onEvent, onConnection) => {

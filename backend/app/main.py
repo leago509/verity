@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from .auth import router as auth_router
 from .db import engine
+from .integrations import router as integrations_router
 from .meetings import router as meetings_router
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
@@ -34,6 +35,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(meetings_router)
+app.include_router(integrations_router)
 
 
 @app.get("/")
