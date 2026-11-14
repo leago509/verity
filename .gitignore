@@ -12,3 +12,5 @@ recordings/
 *.mp4
 *.m4a
 *.wav
+
+celerybeat-schedule*

@@ -1,6 +1,7 @@
 """Database tables for Verity.
 
 Pipeline status values for Meeting.status, in order:
+  (google_meet meetings start as "downloading" while the recording is fetched from Drive)
   uploaded -> transcribing -> diarizing -> indexing -> summarising -> verifying -> done
   (or "failed", with the reason in Meeting.error)
 
@@ -50,6 +51,11 @@ class Meeting(Base):
     duration_seconds: Mapped[float | None] = mapped_column(Float)
     status: Mapped[str] = mapped_column(String(32), default="uploaded", index=True)
     error: Mapped[str | None] = mapped_column(Text)
+    # Where the recording came from: "upload" (manual) or "google_meet" (connected account)
+    source: Mapped[str] = mapped_column(String(16), default="upload", server_default="upload")
+    meeting_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Google Meet recording resource name, e.g. conferenceRecords/abc/recordings/xyz
+    external_id: Mapped[str | None] = mapped_column(String(255), unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
@@ -124,3 +130,43 @@ class Evidence(Base):
 
     statement: Mapped["Statement"] = relationship(back_populates="evidence")
     segment: Mapped["TranscriptSegment"] = relationship()
+
+
+class GoogleConnection(Base):
+    """A user's linked Google account, used to pull Google Meet recordings."""
+
+    __tablename__ = "google_connections"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    google_email: Mapped[str] = mapped_column(String(255))
+    refresh_token_enc: Mapped[str] = mapped_column(Text)  # encrypted, see crypto.py
+    status: Mapped[str] = mapped_column(String(32), default="active")  # active | revoked
+    last_error: Mapped[str | None] = mapped_column(Text)
+    subscription_name: Mapped[str | None] = mapped_column(String(255))
+    subscription_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+
+class RecordingIngestion(Base):
+    """One Google Meet recording we have been told about. recording_name is unique so a
+    recording is only ever imported once, however many times events or polling report it."""
+
+    __tablename__ = "recording_ingestions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    meeting_id: Mapped[int | None] = mapped_column(ForeignKey("meetings.id", ondelete="SET NULL"))
+    recording_name: Mapped[str] = mapped_column(String(255), unique=True)
+    drive_file_id: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default="pending")  # pending|done|failed
+    error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )

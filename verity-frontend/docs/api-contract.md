@@ -25,4 +25,15 @@ Meeting `status` values (state machine, Fig 3.8):
 Claim `classification`: `SUPPORTED | PARTIALLY_SUPPORTED | UNSUPPORTED`.
 If a claim has no evidence, return `evidence: []`: the UI will say "evidence unavailable" (UC-06).
 
-Zoom endpoints (`/integrations/zoom*`) are intentionally not used yet.
+Google Meet integration (`MeetingSummary.source` is `UPLOAD` or `GOOGLE_MEET`):
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | /integrations/google-meet/status | -> `GoogleMeetStatus` (see `src/types.ts`) |
+| GET | /integrations/google-meet/connect | -> `{url}`: Google consent URL; the browser navigates there |
+| GET | /integrations/google-meet/callback | Google redirects here; backend then redirects to `FRONTEND_URL/?google=connected\|denied\|no_refresh_token` |
+| POST | /integrations/google-meet/sync | **202**: check for new recordings now |
+| DELETE | /integrations/google-meet | disconnect (**204**) |
+| POST | /integrations/google-meet/events | Pub/Sub push endpoint (Google only, not the frontend) |
+
+Meetings imported from Meet start as `DOWNLOADING` while the recording is fetched from Drive.

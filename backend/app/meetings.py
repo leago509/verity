@@ -30,6 +30,8 @@ class MeetingOut(BaseModel):
     original_filename: str | None
     status: str
     error: str | None
+    source: str
+    meeting_date: datetime | None
     created_at: datetime
     updated_at: datetime
 

@@ -1,5 +1,5 @@
 import type {
-  AuthResponse, MeetingDetail, MeetingSummary, ProgressEvent, UploadMeta, UploadResult,
+  AuthResponse, GoogleMeetStatus, MeetingDetail, MeetingSummary, ProgressEvent, UploadMeta, UploadResult,
 } from '../types';
 
 export class ApiError extends Error {
@@ -19,6 +19,11 @@ export interface Api {
   uploadSegment(file: File, meta: UploadMeta, onProgress: (fraction: number) => void): Promise<UploadResult>;
   downloadTranscript(id: string): Promise<void>;
   downloadPdf(id: string): Promise<void>;
+  getGoogleMeetStatus(): Promise<GoogleMeetStatus>;
+  /** Returns the Google consent URL; the caller sends the browser there. */
+  getGoogleMeetConnectUrl(): Promise<string>;
+  syncGoogleMeet(): Promise<void>;
+  disconnectGoogleMeet(): Promise<void>;
   /** Returns an unsubscribe function. */
   subscribeProgress(
     id: string,
